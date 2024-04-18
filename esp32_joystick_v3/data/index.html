@@ -24,6 +24,7 @@
 <body  style="position: fixed; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif ;
 color:rgb(128, 128, 128);
 font-size: xx-large;">
+
     <h1 style="text-align:center">
         MOUSEBOT </h1>
     <p style="text-align: center;">
@@ -69,6 +70,7 @@ font-size: xx-large;">
             document.addEventListener('mousemove', Draw);
 
             document.addEventListener('touchstart', startDrawing);
+
             document.addEventListener('touchend', stopDrawing);
             document.addEventListener('touchcancel', stopDrawing);
             document.addEventListener('touchmove', Draw);
@@ -200,5 +202,58 @@ font-size: xx-large;">
             }
         } 
     </script>
-</body>
+	
+<span style='color: #003366;'>
+<h1>Lets generate a random number</h1>
+<p>The first random number is: <span id='rand1'>-</span></p>
+<p>The second random number is: <span id='rand2'>-</span></p>
+<p><button type='button' id='BTN_SEND_BACK'>
+Send info to ESP32
+</button></p>
+<p><button style='color: purple;' type='button' id='BTN_SEND_BACK2'>
+Send info to ESP32
+</button></p>
+</span>
+	</body>
+	
+<script>
+  var Socket;
+  document.getElementById('BTN_SEND_BACK').addEventListener('click', button_send_back);
+  document.getElementById('BTN_SEND_BACK2').addEventListener('click', button_send_back2);
+  function init() {
+    Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+    Socket.onmessage = function(event) {
+      processCommand(event);
+    };
+  }
+  function button_send_back() {
+    var msg = {
+	brand: 'Gibson',
+	type: 'Les Paul Studio',
+	year:  2010,
+	color: 'white'
+	};
+	Socket.send(JSON.stringify(msg));
+  }
+  function processCommand(event) {
+	var obj = JSON.parse(event.data);
+	document.getElementById('rand1').innerHTML = obj.rand1;
+	document.getElementById('rand2').innerHTML = obj.rand2;
+    console.log(obj.rand1);
+	console.log(obj.rand2);
+  }
+  function button_send_back2(){
+    var msg = {
+	brand: 'Hero',
+	type: 'Scary',
+	year:  2010222,
+	color: 'black'
+	};
+	Socket.send(JSON.stringify(msg));
+  }
+  window.onload = function(event) {
+    init();
+  }
+</script>
+
 </html><br>
