@@ -1,32 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>
-        Mousebot
-    </title>
-    <meta name="viewport" content="user-scalable=no">
-	    <script>
-        function sendJoystickData() {
-            var x = /* Get X coordinate of joystick */;
-            var y = /* Get Y coordinate of joystick */;
-
-            var data = { x: x, y: y };
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "/joystick", true);
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.send(JSON.stringify(data));
-        }
-
-        // Example: Send joystick data every 100ms
-        setInterval(sendJoystickData, 100);
-    </script>
+<title>Controller</title>
 </head>
-<body  style="position: fixed; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif ;
-color:rgb(128, 128, 128);
-font-size: xx-large;">
-
-    <h1 style="text-align:center">
-        MOUSEBOT </h1>
+<body style="position: fixed; font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; color: rgb(128, 128, 128); font-size: xx-large;">
+    <h1 style="text-align:center">MOUSEBOT</h1>
     <p style="text-align: center;">
         X: <span id="x_coordinate"> </span>
         Y: <span id="y_coordinate"> </span>
@@ -47,43 +25,32 @@ font-size: xx-large;">
             console.log('Server: ', e.data);
         };
 
-        function send(x,y,speed,angle){
-            var data = {"x":x,"y":y,"speed":speed,"angle":angle};
+        function send(x, y, speed, angle) {
+            var data = {"x": x, "y": y, "speed": speed, "angle": angle};
             data = JSON.stringify(data);
             console.log(data);
             connection.send(data);
         }
 
-
-    </script>
-    <script>
-        var canvas, ctx;
+        var canvas, ctx, timeout;
 
         window.addEventListener('load', () => {
-
             canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');          
-            resize(); 
-
+            ctx = canvas.getContext('2d');
+            resize();
             document.addEventListener('mousedown', startDrawing);
             document.addEventListener('mouseup', stopDrawing);
             document.addEventListener('mousemove', Draw);
-
             document.addEventListener('touchstart', startDrawing);
-
             document.addEventListener('touchend', stopDrawing);
             document.addEventListener('touchcancel', stopDrawing);
             document.addEventListener('touchmove', Draw);
             window.addEventListener('resize', resize);
-
             document.getElementById("x_coordinate").innerText = 0;
             document.getElementById("y_coordinate").innerText = 0;
             document.getElementById("speed").innerText = 0;
             document.getElementById("angle").innerText = 0;
         });
-
-      
-
 
         var width, height, radius, x_orig, y_orig;
         function resize() {
@@ -99,7 +66,6 @@ font-size: xx-large;">
         function background() {
             x_orig = width / 2;
             y_orig = height / 3;
-
             ctx.beginPath();
             ctx.arc(x_orig, y_orig, radius + 20, 0, Math.PI * 2, true);
             ctx.fillStyle = '#ECE5E5';
@@ -116,7 +82,7 @@ font-size: xx-large;">
             ctx.stroke();
         }
 
-        let coord = { x: 0, y: 0 };
+        let coord = {x: 0, y: 0};
         let paint = false;
 
         function getPosition(event) {
@@ -128,10 +94,8 @@ font-size: xx-large;">
 
         function is_it_in_the_circle() {
             var current_radius = Math.sqrt(Math.pow(coord.x - x_orig, 2) + Math.pow(coord.y - y_orig, 2));
-            if (radius >= current_radius) return true
-            else return false
+            return radius >= current_radius;
         }
-
 
         function startDrawing(event) {
             paint = true;
@@ -144,7 +108,6 @@ font-size: xx-large;">
             }
         }
 
-
         function stopDrawing() {
             paint = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -154,106 +117,47 @@ font-size: xx-large;">
             document.getElementById("y_coordinate").innerText = 0;
             document.getElementById("speed").innerText = 0;
             document.getElementById("angle").innerText = 0;
-
+            send(0, 0, 0, 0); // Send neutral position
         }
 
         function Draw(event) {
-
             if (paint) {
+                clearTimeout(timeout); // Clear any existing timeout
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 background();
-                var angle_in_degrees,x, y, speed;
+                var angle_in_degrees, x, y, speed;
                 var angle = Math.atan2((coord.y - y_orig), (coord.x - x_orig));
-
                 if (Math.sign(angle) == -1) {
                     angle_in_degrees = Math.round(-angle * 180 / Math.PI);
+                } else {
+                    angle_in_degrees = Math.round(360 - angle * 180 / Math.PI);
                 }
-                else {
-                    angle_in_degrees =Math.round( 360 - angle * 180 / Math.PI);
-                }
-
 
                 if (is_it_in_the_circle()) {
                     joystick(coord.x, coord.y);
                     x = coord.x;
                     y = coord.y;
-                }
-                else {
+                } else {
                     x = radius * Math.cos(angle) + x_orig;
                     y = radius * Math.sin(angle) + y_orig;
                     joystick(x, y);
                 }
 
-            
                 getPosition(event);
-
-                var speed =  Math.round(100 * Math.sqrt(Math.pow(x - x_orig, 2) + Math.pow(y - y_orig, 2)) / radius);
-
+                var speed = Math.round(100 * Math.sqrt(Math.pow(x - x_orig, 2) + Math.pow(y - y_orig, 2)) / radius);
                 var x_relative = Math.round(x - x_orig);
                 var y_relative = Math.round(y - y_orig);
-                
-
-                document.getElementById("x_coordinate").innerText =  x_relative;
-                document.getElementById("y_coordinate").innerText =y_relative ;
+                document.getElementById("x_coordinate").innerText = x_relative;
+                document.getElementById("y_coordinate").innerText = y_relative;
                 document.getElementById("speed").innerText = speed;
                 document.getElementById("angle").innerText = angle_in_degrees;
+                send(x_relative, y_relative, speed, angle_in_degrees);
 
-                send( x_relative,y_relative,speed,angle_in_degrees);
+                timeout = setTimeout(function () { // Set a timeout to send the neutral position after 1 second of inactivity
+                    send(0, 0, 0, 0);
+                }, 1000);
             }
-        } 
+        }
     </script>
-	
-<span style='color: #003366;'>
-<h1>Lets generate a random number</h1>
-<p>The first random number is: <span id='rand1'>-</span></p>
-<p>The second random number is: <span id='rand2'>-</span></p>
-<p><button type='button' id='BTN_SEND_BACK'>
-Send info to ESP32
-</button></p>
-<p><button style='color: purple;' type='button' id='BTN_SEND_BACK2'>
-Send info to ESP32
-</button></p>
-</span>
-	</body>
-	
-<script>
-  var Socket;
-  document.getElementById('BTN_SEND_BACK').addEventListener('click', button_send_back);
-  document.getElementById('BTN_SEND_BACK2').addEventListener('click', button_send_back2);
-  function init() {
-    Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
-    Socket.onmessage = function(event) {
-      processCommand(event);
-    };
-  }
-  function button_send_back() {
-    var msg = {
-	brand: 'Gibson',
-	type: 'Les Paul Studio',
-	year:  2010,
-	color: 'white'
-	};
-	Socket.send(JSON.stringify(msg));
-  }
-  function processCommand(event) {
-	var obj = JSON.parse(event.data);
-	document.getElementById('rand1').innerHTML = obj.rand1;
-	document.getElementById('rand2').innerHTML = obj.rand2;
-    console.log(obj.rand1);
-	console.log(obj.rand2);
-  }
-  function button_send_back2(){
-    var msg = {
-	brand: 'Hero',
-	type: 'Scary',
-	year:  2010222,
-	color: 'black'
-	};
-	Socket.send(JSON.stringify(msg));
-  }
-  window.onload = function(event) {
-    init();
-  }
-</script>
-
-</html><br>
+</body>
+</html>
